@@ -1,0 +1,133 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Customer Service Chatbot</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+<div class="center-wrap">
+
+  <div class="sticker-area" id="stickerArea" aria-hidden="true"></div>
+
+  <div class="chat-container">
+    <div class="chat-header">
+      <img src="{{ url_for('static', filename='chatbot_avatar.webp') }}" alt="Bot Avatar">
+      Customer Service Chatbot
+    </div>
+
+    <div id="chatbox" aria-live="polite"></div>
+    <div class="typing-indicator" id="typing">
+      Bot is typing<span>.</span><span>.</span><span>.</span>
+    </div>
+
+    <div class="input-area">
+      <input type="text" id="user_input" placeholder="Type your question...">
+      <button id="send_button">➤</button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-text">Made by Sagarika</div>
+  </footer>
+</div>
+
+<script>
+function getTime() {
+  const now = new Date();
+  return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function addMessage(sender, message) {
+  const msg = $("<div>").addClass("message").addClass(sender + "-message");
+  msg.html(`<div>${message}</div><span class="timestamp">${getTime()}</span>`);
+  $("#chatbox").append(msg);
+  $("#chatbox").scrollTop($("#chatbox")[0].scrollHeight);
+}
+
+function sendMessage() {
+  const input = $("#user_input").val().trim();
+  if (!input) return;
+
+  // Escape HTML to prevent injection
+  const escapeHTML = str => str.replace(/&/g, "&amp;")
+                               .replace(/</g, "&lt;")
+                               .replace(/>/g, "&gt;");
+
+  addMessage("user", escapeHTML(input));  // <-- replace previous addMessage line
+  $("#user_input").val("");
+  $("#typing").show();
+
+  $.ajax({
+    url: "/chat",
+    type: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({ message: input }),
+    success: res => {
+      setTimeout(() => {
+        $("#typing").hide();
+
+        // If bot returns multiple suggestions, format nicely
+        let botMessage = res.response;
+        if (botMessage.includes("Did you mean:")) {
+            const parts = botMessage.split("\n");
+            // Escape suggestions individually
+            const escapedSuggestions = parts.slice(1).map(q => `<li>${escapeHTML(q)}</li>`).join("");
+            botMessage = escapeHTML(parts[0]) + "<ul>" + escapedSuggestions + "</ul>";
+        } else {
+            botMessage = escapeHTML(botMessage);
+        }
+
+        addMessage("bot", botMessage);
+      }, 1000);
+    },
+    error: () => {
+      $("#typing").hide();
+      addMessage("bot", "⚠️ Error: Could not connect to server.");
+    }
+  });
+}
+
+$("#send_button").click(sendMessage);
+$("#user_input").keypress(e => { if (e.which === 13) sendMessage(); });
+
+// Initial bot message
+addMessage("bot", "Hello! How can I help you today?");
+
+  /* ---------------- Sticker Animation ---------------- */
+  const stickers = [
+    "{{ url_for('static', filename='sticker1.webp') }}",
+    "{{ url_for('static', filename='sticker2.webp') }}",
+    "{{ url_for('static', filename='sticker3.webp') }}",
+    "{{ url_for('static', filename='sticker4.webp') }}"
+  ];
+
+  let index = 0;
+  function showSticker() {
+    const area = document.getElementById("stickerArea");
+    const img = document.createElement("img");
+    img.src = stickers[index];
+    img.className = "sticker";
+    area.appendChild(img);
+
+    // Remove after animation ends
+    setTimeout(() => {
+      img.remove();
+    }, 6000); // matches animation duration
+
+    // Move to next
+    index = (index + 1) % stickers.length;
+  }
+
+  // Run every 2s
+  setInterval(showSticker, 2000);
+
+  const maxStickers = 10;
+  if (area.children.length > maxStickers) {
+      area.removeChild(area.firstChild);
+}
+  </script>
+</body>
+</html>
