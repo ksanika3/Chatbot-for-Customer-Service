@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     libstdc++6 \
+    libopenblas-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip
@@ -35,5 +36,5 @@ COPY --from=builder /app /app
 # Expose Flask port
 EXPOSE 5000
 
-# Run Gunicorn with threads for better FAISS concurrency
-CMD ["gunicorn", "-w", "2", "--threads", "2", "-b", "0.0.0.0:5000", "app:app"]
+# Run Gunicorn with single worker and threads (less memory usage)
+CMD ["gunicorn", "-w", "1", "--threads", "2", "-b", "0.0.0.0:5000", "app:app"]
