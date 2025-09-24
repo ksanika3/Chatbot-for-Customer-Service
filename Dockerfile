@@ -14,10 +14,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Upgrade pip
 RUN pip install --upgrade pip
 
-# Copy requirements and install into a temp directory
+# Copy requirements and install
 COPY requirements.txt .
-RUN pip install --prefix=/install --no-cache-dir "numpy<2" && \
-    pip install --prefix=/install --no-cache-dir -r requirements.txt
+RUN pip install --prefix=/install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
@@ -27,7 +26,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy only installed packages from builder
+# Copy installed packages from builder
 COPY --from=builder /install /usr/local
 
 # Copy application code
@@ -36,5 +35,5 @@ COPY --from=builder /app /app
 # Expose Flask port
 EXPOSE 5000
 
-# Run Gunicorn
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "app:app"]
+# Run Gunicorn with threads for better FAISS concurrency
+CMD ["gunicorn", "-w", "2", "--threads", "2", "-b", "0.0.0.0:5000", "app:app"]
