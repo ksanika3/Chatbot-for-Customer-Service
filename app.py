@@ -10,20 +10,26 @@ PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 LOG_FILE = os.getenv("LOG_FILE", "chatbot.log")
 
-# Logging setup
+# Logging setup (stdout for Render)
 logging.basicConfig(
-    filename=LOG_FILE,
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 # Load FAQ data & FAISS index
 faq_data = load_faq_data()
-faq_index, faq_embeddings = prepare_embeddings(faq_data)
 
-# Optional: Save index to disk once (first-time)
-# from utils.chatbot_utils import faiss
-# faiss.write_index(faq_index, "faq_index.bin")
+# Optional: save/load index from disk
+INDEX_FILE = "faq_index.bin"
+if os.path.exists(INDEX_FILE):
+    from utils.chatbot_utils import faiss
+    faq_index = faiss.read_index(INDEX_FILE)
+    faq_embeddings = None  # embeddings are stored in index
+else:
+    faq_index, faq_embeddings = prepare_embeddings(faq_data)
+    # Save index for future use
+    from utils.chatbot_utils import faiss
+    faiss.write_index(faq_index, INDEX_FILE)
 
 @app.route("/")
 def index():
