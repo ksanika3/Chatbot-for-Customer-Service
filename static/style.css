@@ -12,13 +12,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;       /* force fixed height */
-  margin: 0;           /* remove margins that allow scroll */
-  overflow: hidden;    /* prevent page scroll */
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
-/* center wrap keeps chat + footer aligned */
+/* Center wrap */
 .center-wrap {
   display: flex;
   flex-direction: column;
@@ -31,19 +31,19 @@ body {
 /* Stickers behind chatbox */
 .sticker-area {
   position: absolute;
-  top: 25%;              /* center vertically */
+  top: 25%;
   left: 0;
   width: 100%;
-  height: 200px;         /* taller than sticker size to avoid clipping */
-  overflow: visible;     /* allow full sticker to show */
+  height: 200px;
+  overflow: visible;
   pointer-events: none;
   z-index: 1;
 }
 
 .sticker {
   position: absolute;
-  top: 50%;              
-  right: -60px;          
+  top: 50%;
+  right: -60px;
   width: var(--sticker-size);
   height: var(--sticker-size);
   object-fit: contain;
@@ -51,7 +51,6 @@ body {
   transform: translateY(-50%);
   animation: moveLeft 6s linear forwards;
 }
-
 
 @keyframes moveLeft {
   from { transform: translateX(0); }
@@ -135,9 +134,9 @@ body {
 }
 
 .bot-message ul {
-    margin: 4px 0 0 16px;
-    padding: 0;
-    list-style-type: disc;
+  margin: 4px 0 0 16px;
+  padding: 0;
+  list-style-type: disc;
 }
 
 /* Timestamp */
@@ -163,16 +162,38 @@ body {
 .typing-indicator span {
   animation: blink 1.5s infinite;
 }
-.typing-indicator span:nth-child(2) {
-  animation-delay: 0.2s;
-}
-.typing-indicator span:nth-child(3) {
-  animation-delay: 0.4s;
-}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
 @keyframes blink {
   0% { opacity: 0.2; }
   20% { opacity: 1; }
   100% { opacity: 0.2; }
+}
+
+.quick-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f9f9f9;
+  border-top: 1px solid #eee;
+}
+
+.quick-replies button {
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #25D366, #2575fc);
+  color: white;
+  font-size: 14px;
+  transition: transform 0.2s ease, background 0.3s ease;
+}
+
+.quick-replies button:hover {
+  transform: scale(1.05);
+  background: linear-gradient(135deg, #20b857, #474dff);
 }
 
 /* Input area */
@@ -199,9 +220,9 @@ body {
   box-shadow: 0 0 0 2px rgba(37, 117, 252, 0.3);
 }
 
-#send_button {
+/* Buttons */
+#send_button, #mic_btn {
   margin-left: 10px;
-  background: linear-gradient(135deg, #25D366, #2575fc);
   color: white;
   border: none;
   border-radius: 50%;
@@ -216,12 +237,23 @@ body {
   box-shadow: 0 4px 12px rgba(37, 117, 252, 0.25);
 }
 
+#send_button {
+  background: linear-gradient(135deg, #25D366, #2575fc);
+}
 #send_button:hover {
   transform: scale(1.08);
   background: linear-gradient(135deg, #20b857, #474dff);
 }
 
-/* Animation */
+#mic_btn {
+  background: linear-gradient(135deg, #ff5f6d, #ffc371);
+}
+#mic_btn:hover {
+  transform: scale(1.08);
+  background: linear-gradient(135deg, #ff3b5c, #ff9a44);
+}
+
+/* Animations */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -242,6 +274,22 @@ body {
 .footer-text {
   margin-bottom: 6px;
 }
+
+.audio-btn {
+    margin-left: 10px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.message.bot-message:hover .audio-btn {
+    opacity: 1;
+}
+
+
 
 /* Responsive */
 @media (max-width: 600px) {

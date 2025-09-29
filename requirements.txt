@@ -1,8 +1,8 @@
 Flask==2.3.3
 Flask-Cors==4.0.0
 pandas==2.2.2
-numpy<2
+numpy>=1.25.0,<2
 torch==2.2.0
-faiss-cpu==1.7.4
+faiss-cpu==1.8.0
 sentence-transformers==2.7.0
 gunicorn==23.0.0

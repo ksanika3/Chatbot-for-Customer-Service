@@ -1,133 +1,221 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Customer Service Chatbot</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Customer Service Voice Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
 <div class="center-wrap">
 
-  <div class="sticker-area" id="stickerArea" aria-hidden="true"></div>
+    <!-- Sticker Area -->
+    <div class="sticker-area" id="stickerArea" aria-hidden="true"></div>
 
-  <div class="chat-container">
-    <div class="chat-header">
-      <img src="{{ url_for('static', filename='chatbot_avatar.webp') }}" alt="Bot Avatar">
-      Customer Service Chatbot
+    <div class="chat-container">
+        <div class="chat-header">
+            <img src="{{ url_for('static', filename='chatbot_avatar.webp') }}" alt="Bot Avatar">
+            Customer Service Chatbot
+            <!-- Clear History & Logout Buttons -->
+            <button id="clear_history_btn" style="margin-left:10px; background:#ff4d4d; color:white; border:none; padding:5px 10px; border-radius:12px; cursor:pointer;">Clear History</button>
+            <button id="logout_btn" style="margin-left:10px; background:#ff5f6d; color:white; border:none; padding:5px 10px; border-radius:12px; cursor:pointer;">Logout</button>
+        </div>
+
+        <!-- Chat messages -->
+        <div id="chatbox" aria-live="polite"></div>
+        <div class="typing-indicator" id="typing">
+            Bot is typing<span>.</span><span>.</span><span>.</span>
+        </div>
+        
+        <!-- Quick Reply Buttons -->
+        <div id="quick-replies" class="quick-replies"></div>
+
+        <!-- Input area -->
+        <div class="input-area">
+            <input type="text" id="user_input" placeholder="Type your question...">
+            <button id="send_button">➤</button>
+            <button id="mic_btn">🎤</button>
+        </div>
     </div>
 
-    <div id="chatbox" aria-live="polite"></div>
-    <div class="typing-indicator" id="typing">
-      Bot is typing<span>.</span><span>.</span><span>.</span>
-    </div>
-
-    <div class="input-area">
-      <input type="text" id="user_input" placeholder="Type your question...">
-      <button id="send_button">➤</button>
-    </div>
-  </div>
-
-  <footer class="footer">
-    <div class="footer-text">Made by Sagarika</div>
-  </footer>
+    <footer class="footer">
+        <div class="footer-text">Made by Sagarika</div>
+    </footer>
 </div>
 
 <script>
+/* ---------------- Utility Functions ---------------- */
 function getTime() {
-  const now = new Date();
-  return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const now = new Date();
+    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
+
+let currentAudio = null; // track playing audio
 
 function addMessage(sender, message) {
-  const msg = $("<div>").addClass("message").addClass(sender + "-message");
-  msg.html(`<div>${message}</div><span class="timestamp">${getTime()}</span>`);
-  $("#chatbox").append(msg);
-  $("#chatbox").scrollTop($("#chatbox")[0].scrollHeight);
-}
+    const msg = $("<div>").addClass("message").addClass(sender + "-message");
 
-function sendMessage() {
-  const input = $("#user_input").val().trim();
-  if (!input) return;
+    if (sender === "bot") {
+        const textDiv = $("<div>").html(message);
+        const audioBtn = $("<button>").addClass("audio-btn").text("▶️");
 
-  // Escape HTML to prevent injection
-  const escapeHTML = str => str.replace(/&/g, "&amp;")
-                               .replace(/</g, "&lt;")
-                               .replace(/>/g, "&gt;");
+        audioBtn.on("click", () => {
+            if (currentAudio && !currentAudio.paused) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                $(".audio-btn").text("▶️");
+            }
 
-  addMessage("user", escapeHTML(input));  // <-- replace previous addMessage line
-  $("#user_input").val("");
-  $("#typing").show();
+            if (!audioBtn.data("audio") || audioBtn.data("audio").paused) {
+                const audio = new Audio(`/speak?text=${encodeURIComponent($(textDiv).text())}`);
+                currentAudio = audio;
+                audioBtn.data("audio", audio);
+                audio.play();
+                audioBtn.text("⏸️");
+                audio.onended = () => { audioBtn.text("▶️"); }
+            } else {
+                audioBtn.data("audio").pause();
+                audioBtn.text("▶️");
+            }
+        });
 
-  $.ajax({
-    url: "/chat",
-    type: "POST",
-    contentType: "application/json",
-    data: JSON.stringify({ message: input }),
-    success: res => {
-      setTimeout(() => {
-        $("#typing").hide();
-
-        // If bot returns multiple suggestions, format nicely
-        let botMessage = res.response;
-        if (botMessage.includes("Did you mean:")) {
-            const parts = botMessage.split("\n");
-            // Escape suggestions individually
-            const escapedSuggestions = parts.slice(1).map(q => `<li>${escapeHTML(q)}</li>`).join("");
-            botMessage = escapeHTML(parts[0]) + "<ul>" + escapedSuggestions + "</ul>";
-        } else {
-            botMessage = escapeHTML(botMessage);
-        }
-
-        addMessage("bot", botMessage);
-      }, 1000);
-    },
-    error: () => {
-      $("#typing").hide();
-      addMessage("bot", "⚠️ Error: Could not connect to server.");
+        msg.append(textDiv).append(audioBtn);
+    } else {
+        msg.html(`<div>${message}</div><span class="timestamp">${getTime()}</span>`);
     }
-  });
+
+    $("#chatbox").append(msg);
+    $("#chatbox").scrollTop($("#chatbox")[0].scrollHeight);
 }
 
+/* ---------------- Load Chat History ---------------- */
+$(document).ready(() => {
+    $.getJSON("/chat_history", function(data) {
+        data.forEach(msg => {
+            addMessage(msg.sender, msg.message);
+        });
+    });
+});
+
+/* ---------------- AJAX Chat Function ---------------- */
+function sendMessage() {
+    const input = $("#user_input").val().trim();
+    if (!input) return;
+
+    const escapeHTML = str => str.replace(/&/g, "&amp;")
+                                 .replace(/</g, "&lt;")
+                                 .replace(/>/g, "&gt;");
+
+    addMessage("user", escapeHTML(input));
+    $("#user_input").val("");
+    $("#typing").show();
+
+    $.ajax({
+        url: "/chat",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ message: input }),
+        success: res => {
+            setTimeout(() => {
+                $("#typing").hide();
+                let botMessage = res.response;
+                addMessage("bot", botMessage);
+                playBotVoice(botMessage);
+            }, 1500);
+        },
+        error: () => {
+            $("#typing").hide();
+            addMessage("bot", "⚠️ Error: Could not connect to server.");
+        }
+    });
+}
+
+/* ---------------- Clear Chat History ---------------- */
+document.getElementById("clear_history_btn").addEventListener("click", () => {
+    if (!confirm("Are you sure you want to clear your chat history?")) return;
+
+    $.ajax({
+        url: "/clear_history",
+        type: "POST",
+        success: res => {
+            if (res.success) {
+                $("#chatbox").empty(); // remove all messages from UI
+                alert("Chat history cleared!");
+            } else {
+                alert("Failed to clear chat history.");
+            }
+        },
+        error: () => {
+            alert("Failed to clear chat history.");
+        }
+    });
+});
+
+
+/* ---------------- Quick Replies ---------------- */
+const quickReplies = [
+    "What are your working hours?",
+    "How can I track my order?",
+    "What is your return policy?",
+    "Contact customer support"
+];
+
+const quickRepliesContainer = document.getElementById("quick-replies");
+quickReplies.forEach(reply => {
+    const btn = document.createElement("button");
+    btn.textContent = reply;
+    btn.addEventListener("click", () => {
+        user_input.value = reply;
+        sendMessage();
+    });
+    quickRepliesContainer.appendChild(btn);
+});
+
+/* ---------------- Voice Recognition ---------------- */
+const micBtn = document.getElementById("mic_btn");
+const userInput = document.getElementById("user_input");
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition, isListening = false;
+
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+        let interim = "", finalT = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) finalT += transcript;
+            else interim += transcript;
+        }
+        if (interim) userInput.value = interim;
+        if (finalT) { userInput.value = finalT; sendMessage(); }
+    };
+    recognition.onerror = e => { console.error(e.error); stopListening(); };
+    recognition.onend = () => { if (isListening) recognition.start(); };
+} else alert("Your browser does not support Speech Recognition.");
+
+micBtn.addEventListener("click", () => isListening ? stopListening() : startListening());
+function startListening() { if (recognition && !isListening) { recognition.start(); isListening = true; micBtn.textContent="🛑"; } }
+function stopListening() { if (recognition && isListening) { recognition.stop(); isListening=false; micBtn.textContent="🎤"; } }
+
+/* ---------------- TTS ---------------- */
+function playBotVoice(text) {
+    const audio = new Audio(`/speak?text=${encodeURIComponent(text)}`);
+    audio.play();
+}
+
+/* ---------------- Send Button ---------------- */
 $("#send_button").click(sendMessage);
-$("#user_input").keypress(e => { if (e.which === 13) sendMessage(); });
+$("#user_input").keypress(e => { if(e.which===13) sendMessage(); });
 
-// Initial bot message
-addMessage("bot", "Hello! How can I help you today?");
-
-  /* ---------------- Sticker Animation ---------------- */
-  const stickers = [
-    "{{ url_for('static', filename='sticker1.webp') }}",
-    "{{ url_for('static', filename='sticker2.webp') }}",
-    "{{ url_for('static', filename='sticker3.webp') }}",
-    "{{ url_for('static', filename='sticker4.webp') }}"
-  ];
-
-  let index = 0;
-  function showSticker() {
-    const area = document.getElementById("stickerArea");
-    const img = document.createElement("img");
-    img.src = stickers[index];
-    img.className = "sticker";
-    area.appendChild(img);
-
-    // Remove after animation ends
-    setTimeout(() => {
-      img.remove();
-    }, 6000); // matches animation duration
-
-    // Move to next
-    index = (index + 1) % stickers.length;
-  }
-
-  // Run every 2s
-  setInterval(showSticker, 2000);
-
-  const maxStickers = 10;
-  if (area.children.length > maxStickers) {
-      area.removeChild(area.firstChild);
-}
-  </script>
+/* ---------------- Logout ---------------- */
+document.getElementById("logout_btn").addEventListener("click", () => {
+    window.location.href = "/logout";
+});
+</script>
 </body>
 </html>
