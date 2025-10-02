@@ -243,6 +243,16 @@ body {
   margin-bottom: 6px;
 }
 
+  .github-link {
+    color: black;          /* Makes the text black */
+    font-weight: bold;      /* Makes it bold */
+    text-decoration: none;  /* Removes underline */
+  }
+
+  .github-link:hover {
+    text-decoration: underline; /* Optional: underline on hover */
+  }
+
 /* Responsive */
 @media (max-width: 600px) {
   .chat-container {
