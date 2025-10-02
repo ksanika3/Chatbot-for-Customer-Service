@@ -232,7 +232,7 @@ body {
   margin-top: 12px;
   width: 100%;
   text-align: center;
-  color: white;
+  color: black;       /* Default footer text color */
   font-size: 14px;
   font-weight: 600;
   position: relative;
@@ -243,15 +243,18 @@ body {
   margin-bottom: 6px;
 }
 
-  .github-link {
-    color: black;          /* Makes the text black */
-    font-weight: bold;      /* Makes it bold */
-    text-decoration: none;  /* Removes underline */
-  }
+/* GitHub link inside footer */
+.footer-text .github-link {
+  color: red;          /* Makes the link black */
+  font-weight: bold;     /* Makes it bold */
+  text-decoration: none; /* Removes underline */
+  cursor: pointer;       /* Changes cursor on hover */
+}
 
-  .github-link:hover {
-    text-decoration: underline; /* Optional: underline on hover */
-  }
+.footer-text .github-link:hover {
+  text-decoration: underline; /* Underline on hover */
+}
+
 
 /* Responsive */
 @media (max-width: 600px) {
