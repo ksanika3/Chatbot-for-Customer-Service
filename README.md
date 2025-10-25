@@ -158,5 +158,6 @@ To update the bot, just edit the CSV and restart the server.
 
 ## 👩‍💻 Author
 
-Made with ❤️ by **Sagarika**
+Made with ❤️ by **Sagarika**.
+GitHub: [Sagarika311](https://github.com/Sagarika311)
 
